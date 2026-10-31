@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosmic Age - My Age in the Solar System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --font-heading: 'Space Grotesk', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: #030712;
+      color: #f3f4f6;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4, .font-heading {
+      font-family: var(--font-heading);
+    }
+
+    /* Custom Canvas Background */
+    #space-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Glassmorphic UI Containers */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .glass-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.75) 100%);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-card:hover {
+      transform: translateY(-6px) scale(1.015);
+      border-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 15px 35px -10px var(--glow-color, rgba(59, 130, 246, 0.3));
+    }
+
+    /* Planet Spheres with CSS 3D Gradients */
+    .planet-sphere {
+      border-radius: 50%;
+      position: relative;
+      background-size: 200% 200%;
+      box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.85),
+                  inset 4px 4px 10px rgba(255, 255, 255, 0.4),
+                  0 0 25px var(--glow-color);
+      animation: rotateGradient 20s ease infinite alternate;
+    }
+
+    @keyframes rotateGradient {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    /* Saturn / Planet Rings Effect */
+    .has-ring::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 220%;
+      height: 45%;
+      border-radius: 50%;
+      border: 6px solid var(--ring-color, rgba(212, 175, 55, 0.6));
+      border-top-color: rgba(255, 255, 255, 0.8);
+      transform: translate(-50%, -50%) rotateX(72deg) rotateY(-12deg);
+      box-shadow: 0 0 15px var(--ring-color, rgba(212, 175, 55, 0.4));
+      pointer-events: none;
+    }
+
+    .has-thin-ring::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 170%;
+      height: 30%;
+      border-radius: 50%;
+      border: 2px solid rgba(147, 197, 253, 0.5);
+      transform: translate(-50%, -50%) rotateX(80deg);
+      pointer-events: none;
+    }
+
+    /* Shimmer Text */
+    .cosmic-title {
+      background: linear-gradient(135deg, #ffffff 0%, #a5f3fc 40%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Custom Input styling */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #030712;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col justify-between selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- Canvas Deep Space Background -->
+  <canvas id="space-bg"></canvas>
+
+  <div class="relative z-10 flex-grow">
+    
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800/80 bg-slate-950/40 backdrop-blur-md sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <svg class="w-5 h-5 text-white animate-spin" style="animation-duration: 25s;" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 21a9 9 0 0 0 9-9c0-1.3-.28-2.54-.78-3.66"/><path d="M3 12a9 9 0 0 0 9 9"/><path d="M3 12a9 9 0 0 1 9-9c1.3 0 2.54.28 3.66.78"/></svg>
+          </div>
+          <span class="font-heading font-bold text-lg tracking-wider bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            COSMIC<span class="text-cyan-400">AGE</span>
+          </span>
+        </div>
+        
+        <div class="flex items-center space-x-2 text-xs text-slate-400 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-full">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="hidden sm:inline">Solar Orbital Engine</span> Active
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+      
+      <!-- Hero Banner -->
+      <section class="text-center space-y-4 max-w-3xl mx-auto">
+        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800/50 text-cyan-300 text-xs font-semibold tracking-wider uppercase mb-2">
+          <svg class="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          <span>Relativity & Planetary Cycles</span>
+        </div>
+        <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight cosmic-title">
+          How Old Are You in Space?
+        </h1>
+        <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+          Time is relative to where you stand in the cosmos. Select your date of birth to calculate your exact age, live cosmic duration, and next birthday across all nine solar system worlds.
+        </p>
+      </section>
+
+      <!-- Input & Control Panel -->
+      <section class="glass-panel rounded-3xl p-6 sm:p-8 max-w-4xl mx-auto relative overflow-hidden">
+        <!-- Subtle background glowing orb inside card -->
+        <div class="absolute -right-20 -bottom-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-20 -top-20 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end relative z-10">
+          
+          <!-- Date & Time Input -->
+          <div class="md:col-span-5 space-y-2">
+            <label for="birthday" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-cyan-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg> Date of Birth
+            </label>
+            <input type="date" id="birthday" 
+              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all shadow-inner font-medium">
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="md:col-span-7 space-y-2">
+            <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Quick Presets</span>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" onclick="setPresetAge(20)" class="px-3 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs font-medium text-slate-200 transition-all hover:border-cyan-500/50">20 Years</button>
+              <button type="button" onclick="setPresetAge(30)" class="px-3 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs font-medium text-slate-200 transition-all hover:border-cyan-500/50">30 Years</button>
+              <button type="button" onclick="setPresetAge(50)" class="px-3 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs font-medium text-slate-200 transition-all hover:border-cyan-500/50">50 Years</button>
+              <button type="button" onclick="setPresetAge(0)" class="px-3 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs font-medium text-slate-200 transition-all hover:border-cyan-500/50">Born Today</button>
+              <button type="button" onclick="clearInput()" class="px-3 py-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/40 text-xs font-medium text-rose-300 transition-all">Clear</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Live Earth Time Stats Banner -->
+        <div id="live-earth-stats" class="mt-6 pt-6 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center hidden">
+          <div class="bg-slate-900/50 border border-slate-800/60 rounded-xl p-3">
+            <div id="live-days" class="text-xl sm:text-2xl font-bold font-heading text-cyan-400">0</div>
+            <div class="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">Earth Days Lived</div>
+          </div>
+          <div class="bg-slate-900/50 border border-slate-800/60 rounded-xl p-3">
+            <div id="live-hours" class="text-xl sm:text-2xl font-bold font-heading text-purple-400">0</div>
+            <div class="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">Hours Lived</div>
+          </div>
+          <div class="bg-slate-900/50 border border-slate-800/60 rounded-xl p-3">
+            <div id="live-minutes" class="text-xl sm:text-2xl font-bold font-heading text-pink-400">0</div>
+            <div class="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">Minutes Lived</div>
+          </div>
+          <div class="bg-slate-900/50 border border-slate-800/60 rounded-xl p-3">
+            <div id="live-seconds" class="text-xl sm:text-2xl font-bold font-heading text-amber-400">0</div>
+            <div class="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">Seconds Lived</div>
+          </div>
+        </div>
+
+        <!-- Warning / Error Message Area -->
+        <div id="message" class="mt-4 text-sm text-amber-400 font-medium hidden flex items-center gap-2">
+          <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+          <span id="message-text"></span>
+        </div>
+      </section>
+
+      <!-- View Controls & Filtering Section -->
+      <section class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800/60">
+        <div>
+          <h2 id="resultTitle" class="text-lg font-bold text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-cyan-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> Planetary Age Overview
+          </h2>
+          <p class="text-xs text-slate-400">Click any planet card to unlock deep orbital facts & trivia</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <!-- Planet Filter -->
+          <div class="flex items-center gap-1.5 w-full sm:w-auto">
+            <label for="planetChoice" class="text-xs text-slate-400 font-medium hidden sm:inline">Filter:</label>
+            <select id="planetChoice" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 w-full sm:w-auto">
+              <option value="all">All 9 Worlds</option>
+              <option value="Mercury">Mercury</option>
+              <option value="Venus">Venus</option>
+              <option value="Earth">Earth</option>
+              <option value="Mars">Mars</option>
+              <option value="Jupiter">Jupiter</option>
+              <option value="Saturn">Saturn</option>
+              <option value="Uranus">Uranus</option>
+              <option value="Neptune">Neptune</option>
+              <option value="Pluto">Pluto</option>
+            </select>
+          </div>
+
+          <!-- Sort Filter -->
+          <div class="flex items-center gap-1.5 w-full sm:w-auto">
+            <label for="sortBy" class="text-xs text-slate-400 font-medium hidden sm:inline">Sort:</label>
+            <select id="sortBy" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 w-full sm:w-auto">
+              <option value="distance">Distance from Sun</option>
+              <option value="age-desc">Highest Age First</option>
+              <option value="age-asc">Lowest Age First</option>
+              <option value="orbit">Orbital Period Length</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Planetary Cards Grid -->
+      <section id="results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Planet Cards populated dynamically by JS -->
+      </section>
+
+      <!-- Upcoming Planetary Birthdays Spotlight -->
+      <section class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-pink-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 1.5-1 1.5-1"/><path d="M2 21h20"/><path d="M7 8v2"/><path d="M12 8v2"/><path d="M17 8v2"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/></svg> Next Planetary Birthdays
+            </h2>
+            <p class="text-xs text-slate-400">Countdown to your next official turn around the Sun on each world</p>
+          </div>
+        </div>
+
+        <div id="birthday-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Dynamically Populated -->
+        </div>
+      </section>
+
+      <!-- Explanatory Space Note -->
+      <section class="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-6 text-slate-400 text-xs sm:text-sm space-y-3">
+        <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-cyan-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> Cosmic Calculation Logic
+        </h3>
+        <p class="leading-relaxed">
+          A "year" is simply the time it takes a planetary body to complete one full orbit around its star. Earth takes approximately 365.25 solar days. Faster inner worlds like Mercury complete their orbits in just 88 days, resulting in higher numerical ages. Outer gas giants like Neptune take over 160 Earth years to orbit once!
+        </p>
+        <p class="text-slate-500 italic">
+          * Pluto is proudly retained in our nine-world solar system exploration, representing its full 248 Earth-year orbital revolution.
+        </p>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-950/60 mt-12 py-6 text-center text-xs text-slate-500">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+        <p>Designed for space enthusiasts & cosmic explorers.</p>
+        <p>Planetary orbital metrics based on standard NASA solar dynamics.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Detailed Planet Fact Modal -->
+  <div id="planet-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-panel max-w-lg w-full rounded-3xl p-6 sm:p-8 space-y-6 transform scale-95 transition-transform duration-300 relative border border-slate-700/60 shadow-2xl" id="modal-content">
+      
+      <!-- Close Button -->
+      <button onclick="closeModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800/80 transition-all">
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="flex items-center space-x-4">
+        <div id="modal-sphere-container"></div>
+        <div>
+          <h3 id="modal-planet-name" class="text-2xl font-bold font-heading text-white">Planet</h3>
+          <p id="modal-planet-type" class="text-xs text-cyan-400 font-semibold uppercase tracking-wider">Terrestrial Planet</p>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+          <span class="text-slate-400 block mb-1">Orbital Period</span>
+          <span id="modal-orbit-days" class="text-slate-100 font-bold text-sm">--</span>
+        </div>
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+          <span class="text-slate-400 block mb-1">Distance from Sun</span>
+          <span id="modal-sun-dist" class="text-slate-100 font-bold text-sm">--</span>
+        </div>
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+          <span class="text-slate-400 block mb-1">Day Length (Earth Time)</span>
+          <span id="modal-day-len" class="text-slate-100 font-bold text-sm">--</span>
+        </div>
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+          <span class="text-slate-400 block mb-1">Orbital Speed</span>
+          <span id="modal-speed" class="text-slate-100 font-bold text-sm">--</span>
+        </div>
+      </div>
+
+      <!-- Trivia & Lore -->
+      <div class="space-y-2">
+        <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-amber-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Planetary Fact & Lore
+        </h4>
+        <p id="modal-trivia" class="text-slate-300 text-xs sm:text-sm leading-relaxed bg-slate-900/40 p-4 rounded-xl border border-slate-800/80">
+          --
+        </p>
+      </div>
+
+      <!-- User Specific Age Insight -->
+      <div id="modal-user-insight" class="bg-gradient-to-r from-cyan-950/40 to-purple-950/40 border border-cyan-800/40 rounded-xl p-4 text-xs text-cyan-200">
+        --
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // Solar System Data Definition
+    const planets = [
+      {
+        name: "Mercury",
+        type: "Terrestrial Planet",
+        days: 87.97,
+        distAU: "0.39 AU (57.9M km)",
+        dayLength: "1,407.6 Hours (58.6 Earth Days)",
+        speed: "47.87 km/s",
+        color: "linear-gradient(135deg, #a3a3a3 0%, #525252 50%, #262626 100%)",
+        glow: "rgba(163, 163, 163, 0.4)",
+        ring: false,
+        trivia: "Mercury is the smallest planet and closest to the Sun. Because it orbits so quickly, a year on Mercury passes in under 3 months! However, its slow rotation means a single day-night cycle lasts nearly 176 Earth days."
+      },
+      {
+        name: "Venus",
+        type: "Terrestrial Planet",
+        days: 224.7,
+        distAU: "0.72 AU (108.2M km)",
+        dayLength: "5,832 Hours (243 Earth Days)",
+        speed: "35.02 km/s",
+        color: "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #78350f 100%)",
+        glow: "rgba(245, 158, 11, 0.4)",
+        ring: false,
+        trivia: "Venus is the hottest planet in our solar system with thick, suffocating toxic clouds. Bizarrely, a day on Venus (243 Earth days) is longer than its year (225 Earth days), and it spins backwards relative to most planets!"
+      },
+      {
+        name: "Earth",
+        type: "Terrestrial Planet",
+        days: 365.256,
+        distAU: "1.00 AU (149.6M km)",
+        dayLength: "24.0 Hours",
+        speed: "29.78 km/s",
+        color: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 40%, #15803d 80%, #0f172a 100%)",
+        glow: "rgba(59, 130, 246, 0.5)",
+        ring: false,
+        trivia: "Our home world! The only known haven for life in the universe. Earth's liquid oceans and atmosphere cushion us through 365.25 day cycles as we hurtle through space at nearly 30 kilometers every single second."
+      },
+      {
+        name: "Mars",
+        type: "Terrestrial Planet",
+        days: 686.98,
+        distAU: "1.52 AU (227.9M km)",
+        dayLength: "24.6 Hours (1.02 Earth Days)",
+        speed: "24.07 km/s",
+        color: "linear-gradient(135deg, #ef4444 0%, #b91c1c 50%, #450a0a 100%)",
+        glow: "rgba(239, 68, 68, 0.4)",
+        ring: false,
+        trivia: "The Red Planet features a day length remarkably similar to Earth's (24h 37m). However, taking almost two Earth years to orbit the Sun means you would celebrate your birthday on Mars only half as often!"
+      },
+      {
+        name: "Jupiter",
+        type: "Gas Giant",
+        days: 4332.59, // ~11.86 yrs
+        distAU: "5.20 AU (778.5M km)",
+        dayLength: "9.9 Hours",
+        speed: "13.07 km/s",
+        color: "linear-gradient(135deg, #f97316 0%, #ea580c 30%, #a16207 70%, #451a03 100%)",
+        glow: "rgba(249, 115, 22, 0.4)",
+        ring: false,
+        trivia: "Jupiter is the monarch of planets, housing more mass than all other solar system planets combined. While its year takes almost 12 Earth years, its hyper-rotation spins through a full day in less than 10 hours."
+      },
+      {
+        name: "Saturn",
+        type: "Gas Giant",
+        days: 10759.22, // ~29.45 yrs
+        distAU: "9.58 AU (1.43B km)",
+        dayLength: "10.7 Hours",
+        speed: "9.68 km/s",
+        color: "linear-gradient(135deg, #fef08a 0%, #eab308 40%, #ca8a04 80%, #713f12 100%)",
+        glow: "rgba(234, 179, 8, 0.4)",
+        ring: true,
+        ringColor: "rgba(254, 240, 138, 0.6)",
+        trivia: "Famous for its magnificent ring system made of ice and rock particles. Taking nearly 30 Earth years to orbit the Sun, most people on Earth only experience 2 to 3 Saturnian birthdays in their entire lifetime."
+      },
+      {
+        name: "Uranus",
+        type: "Ice Giant",
+        days: 30685.4, // ~84 yrs
+        distAU: "19.22 AU (2.87B km)",
+        dayLength: "17.2 Hours",
+        speed: "6.80 km/s",
+        color: "linear-gradient(135deg, #22d3ee 0%, #0891b2 50%, #164e63 100%)",
+        glow: "rgba(34, 211, 238, 0.4)",
+        ring: false,
+        thinRing: true,
+        trivia: "An icy blue giant tilted so far on its axis that it practically orbits the Sun on its side! One Uranian year lasts 84 Earth years—meaning a average human life on Earth roughly equals just one single birthday on Uranus."
+      },
+      {
+        name: "Neptune",
+        type: "Ice Giant",
+        days: 60189.0, // ~164.8 yrs
+        distAU: "30.05 AU (4.50B km)",
+        dayLength: "16.1 Hours",
+        speed: "5.43 km/s",
+        color: "linear-gradient(135deg, #38bdf8 0%, #1d4ed8 60%, #1e1b4b 100%)",
+        glow: "rgba(56, 189, 248, 0.4)",
+        ring: false,
+        trivia: "Neptune experiences the most extreme supersonic winds in the solar system, exceeding 2,100 km/h. It takes nearly 165 Earth years for Neptune to complete a single revolution around the Sun."
+      },
+      {
+        name: "Pluto",
+        type: "Dwarf Planet",
+        days: 90560.0, // ~248 yrs
+        distAU: "39.48 AU (5.90B km)",
+        dayLength: "153.3 Hours (6.4 Earth Days)",
+        speed: "4.74 km/s",
+        color: "linear-gradient(135deg, #cbd5e1 0%, #64748b 50%, #334155 100%)",
+        glow: "rgba(203, 213, 225, 0.3)",
+        ring: false,
+        trivia: "Reclassified as a dwarf planet in 2006, Pluto resides in the distant Kuiper Belt. Pluto hasn't even completed a single full orbit since its discovery in 1930—it takes 248 Earth years to complete one birthday cycle!"
+      }
+    ];
+
+    // DOM References
+    const birthdayInput = document.getElementById("birthday");
+    const planetChoice = document.getElementById("planetChoice");
+    const sortByInput = document.getElementById("sortBy");
+    const resultsGrid = document.getElementById("results");
+    const birthdayList = document.getElementById("birthday-list");
+    const resultTitle = document.getElementById("resultTitle");
+    const messageContainer = document.getElementById("message");
+    const messageText = document.getElementById("message-text");
+
+    const liveEarthStats = document.getElementById("live-earth-stats");
+    const liveDays = document.getElementById("live-days");
+    const liveHours = document.getElementById("live-hours");
+    const liveMinutes = document.getElementById("live-minutes");
+    const liveSeconds = document.getElementById("live-seconds");
+
+    let liveTimerInterval = null;
+
+    // Initialization
+    window.addEventListener("DOMContentLoaded", () => {
+      // Set max date to today
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      birthdayInput.max = `${yyyy}-${mm}-${dd}`;
+
+      // Default Birthday set to 25 years ago for immediate visual preview
+      const defaultDate = new Date();
+      defaultDate.setFullYear(defaultDate.getFullYear() - 25);
+      birthdayInput.value = defaultDate.toISOString().split('T')[0];
+
+      // Event Listeners
+      birthdayInput.addEventListener("change", updateAllCalculations);
+      planetChoice.addEventListener("change", updateAllCalculations);
+      sortByInput.addEventListener("change", updateAllCalculations);
+
+      // Start canvas stars
+      initSpaceCanvas();
+
+      // Initial Render
+      updateAllCalculations();
+    });
+
+    // Preset Buttons
+    function setPresetAge(years) {
+      if (years === 0) {
+        const today = new Date();
+        birthdayInput.value = today.toISOString().split('T')[0];
+      } else {
+        const date = new Date();
+        date.setFullYear(date.getFullYear() - years);
+        birthdayInput.value = date.toISOString().split('T')[0];
+      }
+      updateAllCalculations();
+    }
+
+    function clearInput() {
+      birthdayInput.value = "";
+      messageContainer.classList.add("hidden");
+      liveEarthStats.classList.add("hidden");
+      if (liveTimerInterval) clearInterval(liveTimerInterval);
+      
+      resultsGrid.innerHTML = `
+        <div class="col-span-full text-center py-12 glass-card rounded-2xl p-8 space-y-3">
+          <svg class="w-8 h-8 text-cyan-400 mx-auto animate-pulse" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          <h3 class="text-lg font-bold text-slate-200">Ready for Launch</h3>
+          <p class="text-sm text-slate-400 max-w-md mx-auto">Select a birth date above or pick a preset age to unveil your planetary milestones across the solar system.</p>
+        </div>
+      `;
+      birthdayList.innerHTML = `<p class="text-xs text-slate-500 col-span-full text-center py-4">Enter a birthday to reveal upcoming planetary celebrations.</p>`;
+    }
+
+    // Core Calculation & UI Updating
+    function updateAllCalculations() {
+      messageContainer.classList.add("hidden");
+
+      if (!birthdayInput.value) {
+        return;
+      }
+
+      const [y, m, d] = birthdayInput.value.split("-").map(Number);
+      const bornDate = new Date(y, m - 1, d);
+      const now = new Date();
+
+      if (isNaN(bornDate.getTime())) {
+        showError("Invalid date format selected.");
+        return;
+      }
+
+      if (bornDate > now) {
+        showError("Birth date cannot be set in the future!");
+        return;
+      }
+
+      // Start/Update Live Earth Timer
+      startLiveEarthTimer(bornDate);
+
+      // Filter Planets
+      let selectedPlanets = planetChoice.value === "all" 
+        ? [...planets] 
+        : planets.filter(p => p.name === planetChoice.value);
+
+      // Sort Planets
+      const totalEarthDays = (now - bornDate) / (1000 * 60 * 60 * 24);
+
+      selectedPlanets.sort((a, b) => {
+        const ageA = totalEarthDays / a.days;
+        const ageB = totalEarthDays / b.days;
+
+        if (sortByInput.value === "age-desc") return ageB - ageA;
+        if (sortByInput.value === "age-asc") return ageA - ageB;
+        if (sortByInput.value === "orbit") return a.days - b.days;
+        // Default: distance from sun (original order in array)
+        return planets.indexOf(a) - planets.indexOf(b);
+      });
+
+      // Render Cards Grid
+      renderPlanetCards(selectedPlanets, totalEarthDays);
+
+      // Render Next Birthdays
+      renderNextBirthdays(totalEarthDays);
+    }
+
+    function showError(msg) {
+      messageText.textContent = msg;
+      messageContainer.classList.remove("hidden");
+    }
+
+    function startLiveEarthTimer(bornDate) {
+      liveEarthStats.classList.remove("hidden");
+      
+      if (liveTimerInterval) clearInterval(liveTimerInterval);
+
+      const updateStats = () => {
+        const now = new Date();
+        const diffMs = Math.max(0, now - bornDate);
+
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor(diffMs / (1000 * 60));
+        const seconds = Math.floor(diffMs / 1000);
+
+        liveDays.textContent = days.toLocaleString();
+        liveHours.textContent = hours.toLocaleString();
+        liveMinutes.textContent = minutes.toLocaleString();
+        liveSeconds.textContent = seconds.toLocaleString();
+      };
+
+      updateStats();
+      liveTimerInterval = setInterval(updateStats, 1000);
+    }
+
+    // Render Planet Cards
+    function renderPlanetCards(planetList, earthDays) {
+      resultsGrid.innerHTML = "";
+
+      planetList.forEach(p => {
+        const ageOnPlanet = earthDays / p.days;
+        
+        // Format age with varying decimals based on size
+        let formattedAge;
+        if (ageOnPlanet >= 100) formattedAge = ageOnPlanet.toFixed(1);
+        else if (ageOnPlanet >= 10) formattedAge = ageOnPlanet.toFixed(2);
+        else if (ageOnPlanet >= 1) formattedAge = ageOnPlanet.toFixed(3);
+        else formattedAge = ageOnPlanet.toFixed(4);
+
+        const card = document.createElement("article");
+        card.className = "glass-card rounded-3xl p-6 relative overflow-hidden group cursor-pointer";
+        card.style.setProperty("--glow-color", p.glow);
+        card.onclick = () => openModal(p, ageOnPlanet);
+
+        const ringClass = p.ring ? 'has-ring' : (p.thinRing ? 'has-thin-ring' : '');
+        const ringStyle = p.ringColor ? `--ring-color: ${p.ringColor}` : '';
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <!-- Planet Sphere -->
+              <div class="w-12 h-12 planet-sphere ${ringClass}" 
+                   style="background: ${p.color}; --glow-color: ${p.glow}; ${ringStyle}">
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">${p.name}</h3>
+                <span class="text-[11px] text-slate-400 font-medium">${p.type}</span>
+              </div>
+            </div>
+            <span class="p-2 rounded-full bg-slate-800/60 text-slate-400 group-hover:text-cyan-400 group-hover:bg-slate-800 transition-all">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+            </span>
+          </div>
+
+          <!-- Main Age Display -->
+          <div class="space-y-1 my-4">
+            <div class="text-3xl sm:text-4xl font-extrabold font-heading text-white tracking-tight">
+              ${formattedAge}
+            </div>
+            <div class="text-xs text-cyan-400 font-semibold uppercase tracking-wider">
+              ${p.name} Years Old
+            </div>
+          </div>
+
+          <!-- Planet Orbital Context -->
+          <div class="pt-4 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+            <div>
+              <span class="block text-slate-500">1 Year Orbit</span>
+              <span class="text-slate-200 font-medium">${p.days.toLocaleString()} Earth Days</span>
+            </div>
+            <div>
+              <span class="block text-slate-500">Distance</span>
+              <span class="text-slate-200 font-medium">${p.distAU.split(' ')[0]} AU</span>
+            </div>
+          </div>
+        `;
+
+        resultsGrid.appendChild(card);
+      });
+    }
+
+    // Render Next Birthdays
+    function renderNextBirthdays(earthDays) {
+      birthdayList.innerHTML = "";
+
+      planets.forEach(p => {
+        const currentAge = earthDays / p.days;
+        const nextAge = Math.floor(currentAge) + 1;
+        const daysToNext = (nextAge * p.days) - earthDays;
+        
+        // Convert remaining Earth days to months or days
+        let timeRemainingText;
+        if (daysToNext >= 365) {
+          const yearsRemaining = (daysToNext / 365.25).toFixed(1);
+          timeRemainingText = `In ~${yearsRemaining} Earth Years`;
+        } else if (daysToNext >= 30) {
+          const monthsRemaining = (daysToNext / 30.4).toFixed(1);
+          timeRemainingText = `In ~${monthsRemaining} Months`;
+        } else {
+          timeRemainingText = `In ${Math.ceil(daysToNext)} Earth Days`;
+        }
+
+        const bdayCard = document.createElement("div");
+        bdayCard.className = "bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between";
+        
+        bdayCard.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <div class="w-3 h-3 rounded-full" style="background:${p.color}"></div>
+            <div>
+              <h4 class="text-xs font-bold text-white">${p.name} Turning ${nextAge}</h4>
+              <p class="text-[11px] text-slate-400">${timeRemainingText}</p>
+            </div>
+          </div>
+          <span class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2.5 py-1 rounded-lg">
+            ${Math.ceil(daysToNext).toLocaleString()} Days
+          </span>
+        `;
+
+        birthdayList.appendChild(bdayCard);
+      });
+    }
+
+    // Modal Control
+    function openModal(planet, age) {
+      const modal = document.getElementById("planet-modal");
+      const modalContent = document.getElementById("modal-content");
+      
+      document.getElementById("modal-planet-name").textContent = planet.name;
+      document.getElementById("modal-planet-type").textContent = planet.type;
+      document.getElementById("modal-orbit-days").textContent = `${planet.days.toLocaleString()} Earth Days`;
+      document.getElementById("modal-sun-dist").textContent = planet.distAU;
+      document.getElementById("modal-day-len").textContent = planet.dayLength;
+      document.getElementById("modal-speed").textContent = planet.speed;
+      document.getElementById("modal-trivia").textContent = planet.trivia;
+
+      const ringClass = planet.ring ? 'has-ring' : (planet.thinRing ? 'has-thin-ring' : '');
+      const ringStyle = planet.ringColor ? `--ring-color: ${planet.ringColor}` : '';
+      
+      document.getElementById("modal-sphere-container").innerHTML = `
+        <div class="w-16 h-16 planet-sphere ${ringClass}" style="background: ${planet.color}; --glow-color: ${planet.glow}; ${ringStyle}"></div>
+      `;
+
+      let insightMsg = "";
+      if (age >= 1) {
+        insightMsg = `You have completed <strong>${age.toFixed(2)}</strong> orbits around the Sun on ${planet.name}!`;
+      } else {
+        const percent = (age * 100).toFixed(1);
+        insightMsg = `On ${planet.name}, you haven't lived a full year yet! You are <strong>${percent}%</strong> through your first orbital cycle.`;
+      }
+      document.getElementById("modal-user-insight").innerHTML = insightMsg;
+
+      modal.classList.remove("opacity-0", "pointer-events-none");
+      modalContent.classList.remove("scale-95");
+      modalContent.classList.add("scale-100");
+    }
+
+    function closeModal() {
+      const modal = document.getElementById("planet-modal");
+      const modalContent = document.getElementById("modal-content");
+
+      modal.classList.add("opacity-0", "pointer-events-none");
+      modalContent.classList.remove("scale-100");
+      modalContent.classList.add("scale-95");
+    }
+
+    // Modal overlay click to close
+    document.getElementById("planet-modal").addEventListener("click", (e) => {
+      if (e.target.id === "planet-modal") closeModal();
+    });
+
+    // Dynamic Space Backdrop (Starfield Canvas + Glowing Nebulae)
+    function initSpaceCanvas() {
+      const canvas = document.getElementById("space-bg");
+      const ctx = canvas.getContext("2d");
+
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      window.addEventListener("resize", () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      // Generate Stars
+      const starCount = Math.floor((width * height) / 3000);
+      const stars = [];
+
+      for (let i = 0; i < starCount; i++) {
+        stars.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          radius: Math.random() * 1.3 + 0.2,
+          alpha: Math.random(),
+          speed: Math.random() * 0.015 + 0.005,
+          color: Math.random() > 0.8 ? '#7dd3fc' : (Math.random() > 0.8 ? '#f472b6' : '#ffffff')
+        });
+      }
+
+      // Shooting Star Object
+      let shootingStar = null;
+
+      function spawnShootingStar() {
+        if (Math.random() < 0.02 && !shootingStar) {
+          shootingStar = {
+            x: Math.random() * width,
+            y: Math.random() * (height / 2),
+            length: Math.random() * 80 + 40,
+            speed: Math.random() * 10 + 6,
+            angle: Math.PI / 4, // 45 degrees
+            alpha: 1
+          };
+        }
+      }
+
+      function animateSpace() {
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw Ambient Nebula Glows
+        const radGrd = ctx.createRadialGradient(width * 0.2, height * 0.3, 50, width * 0.2, height * 0.3, 500);
+        radGrd.addColorStop(0, "rgba(56, 189, 248, 0.04)");
+        radGrd.addColorStop(1, "transparent");
+        ctx.fillStyle = radGrd;
+        ctx.fillRect(0, 0, width, height);
+
+        const radGrd2 = ctx.createRadialGradient(width * 0.8, height * 0.7, 50, width * 0.8, height * 0.7, 600);
+        radGrd2.addColorStop(0, "rgba(168, 85, 247, 0.04)");
+        radGrd2.addColorStop(1, "transparent");
+        ctx.fillStyle = radGrd2;
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw Stars with twinkle effect
+        stars.forEach(star => {
+          star.alpha += star.speed;
+          if (star.alpha > 1 || star.alpha < 0.1) {
+            star.speed = -star.speed;
+          }
+
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+          ctx.fillStyle = star.color;
+          ctx.globalAlpha = Math.abs(star.alpha);
+          ctx.fill();
+        });
+
+        // Handle Shooting Star
+        spawnShootingStar();
+        if (shootingStar) {
+          ctx.globalAlpha = shootingStar.alpha;
+          ctx.beginPath();
+          const endX = shootingStar.x + Math.cos(shootingStar.angle) * shootingStar.length;
+          const endY = shootingStar.y + Math.sin(shootingStar.angle) * shootingStar.length;
+          
+          const grad = ctx.createLinearGradient(shootingStar.x, shootingStar.y, endX, endY);
+          grad.addColorStop(0, "rgba(255, 255, 255, 0)");
+          grad.addColorStop(1, "#38bdf8");
+
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.8;
+          ctx.moveTo(shootingStar.x, shootingStar.y);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+
+          shootingStar.x += Math.cos(shootingStar.angle) * shootingStar.speed;
+          shootingStar.y += Math.sin(shootingStar.angle) * shootingStar.speed;
+          shootingStar.alpha -= 0.015;
+
+          if (shootingStar.alpha <= 0) {
+            shootingStar = null;
+          }
+        }
+
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(animateSpace);
+      }
+
+      animateSpace();
+    }
+  </script>
+</body>
+</html>
